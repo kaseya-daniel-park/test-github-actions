@@ -29,10 +29,10 @@ jobs:
             echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
             JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
             UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
-            echo "updated_description=$(echo "$UPDATED_DESCRIPTION" | base64 -w 0)" >> $GITHUB_ENV
+            echo "updated_description=$(echo \"$UPDATED_DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
           else
             echo "JIRA_TICKET does not match the condition"
-            echo "updated_description=$(echo "$DESCRIPTION" | base64 -w 0)" >> $GITHUB_ENV
+            echo "updated_description=$(echo \"$DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
 
       - name: Update PR description
         uses: peter-evans/repository-dispatch@v1
