@@ -15,9 +15,7 @@ jobs:
         id: extract-description
         run: |
           PR_DESCRIPTION=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH")
-          echo "description<<EOF" >> $GITHUB_ENV
-          echo "$PR_DESCRIPTION" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "PR_DESCRIPTION=$PR_DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update Jira Ticket Link
         id: update-jira-link
@@ -29,14 +27,10 @@ jobs:
             echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
             JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
             UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
-            echo "updated_description<<EOF" >> $GITHUB_ENV
-            echo "$UPDATED_DESCRIPTION" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "updated_description=$UPDATED_DESCRIPTION" >> $GITHUB_ENV
           else
             echo "JIRA_TICKET does not match the condition"
-            echo "updated_description<<EOF" >> $GITHUB_ENV
-            echo "$DESCRIPTION" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "updated_description=$DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update PR description
         uses: peter-evans/repository-dispatch@v1
