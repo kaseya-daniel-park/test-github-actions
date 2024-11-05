@@ -1,0 +1,38 @@
+name: Update Jira Ticket Link
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+jobs:
+  update-jira-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Extract PR description
+        id: extract-description
+        run: |
+          PR_DESCRIPTION=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH")
+          echo "::set-output name=description::$PR_DESCRIPTION"
+
+      - name: Update Jira Ticket Link
+        id: update-jira-link
+        run: |
+          DESCRIPTION="${{ steps.extract-description.outputs.description }}"
+          JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
+          if [[ $JIRA_TICKET == RFTDEV-* ]]; then
+            JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
+            UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
+            echo "::set-output name=updated_description::$UPDATED_DESCRIPTION"
+          else
+            echo "::set-output name=updated_description::$DESCRIPTION"
+          fi
+
+      - name: Update PR description
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: update-pr-description
+          client-payload: '{"pull_request_number": ${{ github.event.pull_request.number }}, "body": "${{ steps.update-jira-link.outputs.updated_description }}"}'
