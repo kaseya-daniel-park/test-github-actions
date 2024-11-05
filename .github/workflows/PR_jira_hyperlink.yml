@@ -14,28 +14,28 @@ jobs:
       - name: Extract PR description
         id: extract-description
         run: |
-          PR_DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+          PR_DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" | base64)
           echo "Extracted PR_DESCRIPTION: $PR_DESCRIPTION"
           echo "PR_DESCRIPTION=$PR_DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update Jira Ticket Link
         id: update-jira-link
         run: |
-          DESCRIPTION="${{ env.PR_DESCRIPTION }}"
+          DESCRIPTION=$(echo "${{ env.PR_DESCRIPTION }}" | base64 --decode)
           JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
           echo "Extracted JIRA_TICKET: $JIRA_TICKET"
           if [[ $JIRA_TICKET == RFTDEV-* ]]; then
             echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
             JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
             UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
-            echo "updated_description=$UPDATED_DESCRIPTION" >> $GITHUB_ENV
+            echo "updated_description=$(echo "$UPDATED_DESCRIPTION" | base64)" >> $GITHUB_ENV
           else
             echo "JIRA_TICKET does not match the condition"
-            echo "updated_description=$DESCRIPTION" >> $GITHUB_ENV
+            echo "updated_description=$(echo "$DESCRIPTION" | base64)" >> $GITHUB_ENV
 
       - name: Update PR description
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: update-pr-description
-          client-payload: '{"pull_request_number": ${{ github.event.pull_request.number }}, "body": "${{ env.updated_description }}"}'
+          client-payload: '{"pull_request_number": ${{ github.event.pull_request.number }}, "body": "$(echo "${{ env.updated_description }}" | base64 --decode)"}'
