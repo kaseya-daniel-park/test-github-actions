@@ -47,4 +47,4 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} \
-            -d "$(jq -nc --arg body "$UPDATED_DESCRIPTION" '{"body":$body}')"
+            -d "{\"body\":\"$(echo "$UPDATED_DESCRIPTION" | sed 's/"/\\"/g')\"}"
