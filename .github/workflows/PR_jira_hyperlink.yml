@@ -26,10 +26,15 @@ jobs:
           JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
           echo "Extracted JIRA_TICKET: $JIRA_TICKET"
           if [[ $JIRA_TICKET == RFTDEV-* ]]; then
-            echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
-            JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
-            UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
-            echo "updated_description=$(echo \"$UPDATED_DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
+            if echo "$DESCRIPTION" | grep -q "\[$JIRA_TICKET\](https://kaseya.atlassian.net/browse/$JIRA_TICKET)"; then
+              echo "JIRA_TICKET hyperlink already exists: $JIRA_TICKET"
+              echo "updated_description=$(echo \"$DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
+            else
+              echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
+              JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
+              UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
+              echo "updated_description=$(echo \"$UPDATED_DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
+            fi
           else
             echo "JIRA_TICKET does not match the condition"
             echo "updated_description=$(echo \"$DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
