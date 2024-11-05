@@ -22,6 +22,7 @@ jobs:
         id: update-jira-link
         run: |
           DESCRIPTION=$(echo "${{ env.PR_DESCRIPTION }}" | base64 --decode)
+          echo "Decoded DESCRIPTION: $DESCRIPTION"
           JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
           echo "Extracted JIRA_TICKET: $JIRA_TICKET"
           if [[ $JIRA_TICKET == RFTDEV-* ]]; then
