@@ -1,0 +1,48 @@
+name: Update Jira Ticket Link
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+jobs:
+  update-jira-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract PR description
+        id: extract-description
+        run: |
+          PR_DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" | base64 -w 0)
+          echo "PR_DESCRIPTION=$PR_DESCRIPTION" >> $GITHUB_ENV
+
+      - name: Update Jira Ticket Link
+        id: update-jira-link
+        run: |
+          DESCRIPTION=$(echo "${{ env.PR_DESCRIPTION }}" | base64 --decode)
+          JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
+          echo "Extracted JIRA_TICKET: $JIRA_TICKET"
+          if [[ $JIRA_TICKET == RFTDEV-* ]]; then
+            if echo "$DESCRIPTION" | grep -q "\[$JIRA_TICKET\](https://kaseya.atlassian.net/browse/$JIRA_TICKET)"; then
+              echo "JIRA_TICKET hyperlink already exists: $JIRA_TICKET"
+              UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | base64 -w 0)
+            else
+              echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
+              JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
+              UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|" | base64 -w 0)
+            fi
+          else
+            echo "JIRA_TICKET does not match the condition"
+            UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | base64 -w 0)
+          fi
+          echo "updated_description=$UPDATED_DESCRIPTION" >> $GITHUB_ENV
+
+      - name: Update PR description
+        run: |
+          UPDATED_DESCRIPTION=$(echo "${{ env.updated_description }}" | base64 --decode)
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} \
+            -d "$(jq -nc --arg body "$UPDATED_DESCRIPTION" '{"body":$body}')"
