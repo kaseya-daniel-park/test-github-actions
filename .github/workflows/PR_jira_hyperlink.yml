@@ -36,8 +36,8 @@ jobs:
           fi
 
       - name: Update PR description
-        uses: peter-evans/repository-dispatch@v1
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: update-pr-description
-          client-payload: '{"pull_request_number": ${{ github.event.pull_request.number }}, "body": "$(echo ''${{ env.updated_description }}'' | base64 --decode)"}'
+          client-payload: '{"pull_request_number": ${{ github.event.pull_request.number }}, "body": "$(echo "${{ env.updated_description }}" | base64 --decode)"}'
