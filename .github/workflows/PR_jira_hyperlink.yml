@@ -14,13 +14,14 @@ jobs:
       - name: Extract PR description
         id: extract-description
         run: |
-          PR_DESCRIPTION=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH")
+          PR_DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+          echo "Extracted PR_DESCRIPTION: $PR_DESCRIPTION"
           echo "PR_DESCRIPTION=$PR_DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update Jira Ticket Link
         id: update-jira-link
         run: |
-          DESCRIPTION="${{ env.description }}"
+          DESCRIPTION="${{ env.PR_DESCRIPTION }}"
           JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
           echo "Extracted JIRA_TICKET: $JIRA_TICKET"
           if [[ $JIRA_TICKET == RFTDEV-* ]]; then
