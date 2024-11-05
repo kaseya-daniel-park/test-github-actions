@@ -14,14 +14,14 @@ jobs:
       - name: Extract PR description
         id: extract-description
         run: |
-          PR_DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" | base64 -w 0)
+          PR_DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
           echo "Extracted PR_DESCRIPTION: $PR_DESCRIPTION"
           echo "PR_DESCRIPTION=$PR_DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update Jira Ticket Link
         id: update-jira-link
         run: |
-          DESCRIPTION=$(echo "${{ env.PR_DESCRIPTION }}" | base64 --decode)
+          DESCRIPTION="${{ env.PR_DESCRIPTION }}"
           echo "Decoded DESCRIPTION: $DESCRIPTION"
           JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
           echo "Extracted JIRA_TICKET: $JIRA_TICKET"
@@ -29,10 +29,10 @@ jobs:
             echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
             JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
             UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
-            echo "updated_description=$(echo \"$UPDATED_DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
+            echo "updated_description=$UPDATED_DESCRIPTION" >> $GITHUB_ENV
           else
             echo "JIRA_TICKET does not match the condition"
-            echo "updated_description=$(echo \"$DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
+            echo "updated_description=$DESCRIPTION" >> $GITHUB_ENV
           fi
 
       - name: Update PR description
@@ -41,4 +41,4 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} \
-            -d "{\"body\":\"$(echo \"${{ env.updated_description }}\" | base64 --decode)\"}"
+            -d "{\"body\":\"${{ env.updated_description }}\"}"
