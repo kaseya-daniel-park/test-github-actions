@@ -37,9 +37,9 @@ jobs:
 
       - name: Update PR description
         run: |
-          UPDATED_DESCRIPTION=$(echo "${{ env.updated_description }}" | base64 --decode)
+          UPDATED_DESCRIPTION=$(echo "${{ env.updated_description }}" | base64 --decode | jq -sRr @json)
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} \
-            -d "{\"body\":\"$UPDATED_DESCRIPTION\"}"
+            -d "{\"body\":$UPDATED_DESCRIPTION}"
