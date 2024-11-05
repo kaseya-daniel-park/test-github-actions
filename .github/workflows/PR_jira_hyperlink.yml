@@ -9,26 +9,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Extract PR description
         id: extract-description
         run: |
           PR_DESCRIPTION=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH")
-          echo "::set-output name=description::$PR_DESCRIPTION"
+          echo "description=$PR_DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update Jira Ticket Link
         id: update-jira-link
         run: |
           DESCRIPTION="${{ steps.extract-description.outputs.description }}"
           JIRA_TICKET=$(echo "$DESCRIPTION" | sed -n '/## Jira Ticket/,/##/p' | sed '1d;$d' | xargs)
+          echo "Extracted JIRA_TICKET: $JIRA_TICKET"
           if [[ $JIRA_TICKET == RFTDEV-* ]]; then
+            echo "JIRA_TICKET matches the condition: $JIRA_TICKET"
             JIRA_LINK="https://kaseya.atlassian.net/browse/$JIRA_TICKET"
             UPDATED_DESCRIPTION=$(echo "$DESCRIPTION" | sed "s|$JIRA_TICKET|[$JIRA_TICKET]($JIRA_LINK)|")
-            echo "::set-output name=updated_description::$UPDATED_DESCRIPTION"
+            echo "updated_description=$UPDATED_DESCRIPTION" >> $GITHUB_ENV
           else
-            echo "::set-output name=updated_description::$DESCRIPTION"
-          fi
+            echo "JIRA_TICKET does not match the condition"
+            echo "updated_description=$DESCRIPTION" >> $GITHUB_ENV
 
       - name: Update PR description
         uses: peter-evans/repository-dispatch@v1
