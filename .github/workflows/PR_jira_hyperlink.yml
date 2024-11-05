@@ -33,6 +33,7 @@ jobs:
           else
             echo "JIRA_TICKET does not match the condition"
             echo "updated_description=$(echo \"$DESCRIPTION\" | base64 -w 0)" >> $GITHUB_ENV
+          fi
 
       - name: Update PR description
         uses: peter-evans/repository-dispatch@v1
